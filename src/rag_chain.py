@@ -5,9 +5,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_chroma import Chroma
 
-from src.config import LLM_MODEL, RETRIEVER_K
+from src.config import LLM_MODEL
 
 load_dotenv()
 
@@ -29,12 +28,7 @@ def format_docs(docs) -> str:
     return "\n\n".join(parts)
 
 
-def build_rag_chain(vectorstore: Chroma):
-    retriever = vectorstore.as_retriever(
-        search_type="mmr",
-        search_kwargs={"k": RETRIEVER_K, "fetch_k": RETRIEVER_K * 3},
-    )
-
+def build_rag_chain(retriever):
     prompt = ChatPromptTemplate.from_messages([
         ("system", SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="chat_history"),

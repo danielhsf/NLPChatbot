@@ -8,8 +8,8 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage
 
-from src.config import CHROMA_DB_DIR
-from src.ingest import get_embeddings, run_ingestion, load_vectorstore
+from src.config import CHROMA_DB_DIR, WEAVIATE_DATA_DIR, VECTOR_STORE_BACKEND
+from src.ingest import get_embeddings, run_ingestion, load_vectorstore, build_retriever
 from src.rag_chain import build_rag_chain
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -28,6 +28,18 @@ def init_session_state():
         st.session_state.retriever = None
     if "embeddings" not in st.session_state:
         st.session_state.embeddings = None
+    if "weaviate_client" not in st.session_state:
+        st.session_state.weaviate_client = None
+
+
+def _close_weaviate_client():
+    client = st.session_state.get("weaviate_client")
+    if client is not None:
+        try:
+            client.close()
+        except Exception:
+            pass
+        st.session_state.weaviate_client = None
 
 
 def load_embeddings_once():
@@ -37,10 +49,18 @@ def load_embeddings_once():
 
 
 def auto_load_vectorstore():
-    if st.session_state.rag_chain is None and CHROMA_DB_DIR.exists():
+    if st.session_state.rag_chain is not None:
+        return
+    store_exists = (
+        WEAVIATE_DATA_DIR.exists() if VECTOR_STORE_BACKEND == "weaviate"
+        else CHROMA_DB_DIR.exists()
+    )
+    if store_exists:
         with st.spinner("Loading existing vector store..."):
-            vectorstore = load_vectorstore(st.session_state.embeddings)
-            st.session_state.rag_chain, st.session_state.retriever = build_rag_chain(vectorstore)
+            vectorstore, client = load_vectorstore(st.session_state.embeddings)
+            st.session_state.weaviate_client = client
+            retriever = build_retriever(vectorstore)
+            st.session_state.rag_chain, st.session_state.retriever = build_rag_chain(retriever)
 
 
 init_session_state()
@@ -61,8 +81,11 @@ with st.sidebar:
     if st.button(ingest_label, use_container_width=True):
         with st.spinner("Ingesting documents..."):
             try:
-                vectorstore = run_ingestion()
-                st.session_state.rag_chain, st.session_state.retriever = build_rag_chain(vectorstore)
+                _close_weaviate_client()
+                vectorstore, client = run_ingestion()
+                st.session_state.weaviate_client = client
+                retriever = build_retriever(vectorstore)
+                st.session_state.rag_chain, st.session_state.retriever = build_rag_chain(retriever)
                 st.success("Ingestion complete!")
                 st.rerun()
             except FileNotFoundError as e:
