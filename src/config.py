@@ -20,5 +20,6 @@ LLM_MODEL = "claude-sonnet-4-5"
 CHROMA_COLLECTION_NAME = "nlp_textbook"
 WEAVIATE_COLLECTION_NAME = "NlpTextbook"  # must start with uppercase letter
 
-VECTOR_STORE_BACKEND: str = os.environ.get("VECTOR_STORE_BACKEND", "chroma").lower()
-HYBRID_ALPHA: float = float(os.environ.get("HYBRID_ALPHA", "0.5"))
+VECTOR_STORE_BACKEND: str = os.environ.get(
+    "VECTOR_STORE_BACKEND", "chroma").lower()
+HYBRID_ALPHA: float = float(os.environ.get("HYBRID_ALPHA", "0.75"))

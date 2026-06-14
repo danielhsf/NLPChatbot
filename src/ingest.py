@@ -1,3 +1,4 @@
+import re
 import shutil
 from dotenv import load_dotenv
 
@@ -69,6 +70,29 @@ def _load_chroma(embeddings) -> Chroma:
 
 # --- Weaviate helpers ---
 
+_INVALID_PROP_CHARS = re.compile(r"[^_0-9A-Za-z]")
+
+
+def _sanitize_metadata_keys(chunks):
+    """Weaviate property names must match /[_A-Za-z][_0-9A-Za-z]{0,230}/.
+
+    PDF metadata often carries keys with spaces, dots, hyphens or colons
+    (e.g. 'Content-Type'), which Weaviate rejects. Rewrite each key to a
+    valid GraphQL name, dropping any that become empty or collide.
+    """
+    for chunk in chunks:
+        clean = {}
+        for key, value in chunk.metadata.items():
+            new_key = _INVALID_PROP_CHARS.sub("_", key)
+            if new_key and new_key[0].isdigit():
+                new_key = f"_{new_key}"
+            if not new_key or new_key in clean:
+                continue
+            clean[new_key] = value
+        chunk.metadata = clean
+    return chunks
+
+
 def _get_weaviate_client():
     import weaviate
     WEAVIATE_DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -81,6 +105,7 @@ def _build_weaviate(chunks, embeddings):
     from langchain_weaviate.vectorstores import WeaviateVectorStore
     if WEAVIATE_DATA_DIR.exists():
         shutil.rmtree(WEAVIATE_DATA_DIR)
+    chunks = _sanitize_metadata_keys(chunks)
     client = _get_weaviate_client()
     try:
         vs = WeaviateVectorStore.from_documents(
