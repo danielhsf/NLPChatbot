@@ -93,12 +93,27 @@ def _sanitize_metadata_keys(chunks):
     return chunks
 
 
+# Default ports used by weaviate.connect_to_embedded().
+_WEAVIATE_HTTP_PORT = 8079
+_WEAVIATE_GRPC_PORT = 50050
+
+
 def _get_weaviate_client():
     import weaviate
+    from weaviate.exceptions import WeaviateStartUpError
     WEAVIATE_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    return weaviate.connect_to_embedded(
-        persistence_data_path=str(WEAVIATE_DATA_DIR)
-    )
+    try:
+        return weaviate.connect_to_embedded(
+            persistence_data_path=str(WEAVIATE_DATA_DIR)
+        )
+    except WeaviateStartUpError:
+        # An embedded instance is already listening on the default ports
+        # (e.g. a prior Streamlit rerun/session or a leftover process).
+        # Reuse it instead of failing on the port conflict.
+        return weaviate.connect_to_local(
+            port=_WEAVIATE_HTTP_PORT,
+            grpc_port=_WEAVIATE_GRPC_PORT,
+        )
 
 
 def _build_weaviate(chunks, embeddings):
@@ -159,8 +174,12 @@ def load_vectorstore(embeddings):
 
 def build_retriever(vectorstore):
     if VECTOR_STORE_BACKEND == "weaviate":
+        # langchain-weaviate's similarity_search is already a hybrid
+        # (BM25 + vector) query under the hood; there is no "hybrid"
+        # search_type. The hybrid weighting is controlled by `alpha`,
+        # which is forwarded to weaviate's query.hybrid().
         return vectorstore.as_retriever(
-            search_type="hybrid",
+            search_type="similarity",
             search_kwargs={"k": RETRIEVER_K, "alpha": HYBRID_ALPHA},
         )
     return vectorstore.as_retriever(
