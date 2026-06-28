@@ -1,6 +1,7 @@
 .env
 references/
 chroma_db/
+weaviate_db/
 __pycache__/
 .venv/
 *.pyc
