@@ -2438,16 +2438,12 @@ dependencies = [
     { name = "langchain-chroma" },
     { name = "langchain-community" },
     { name = "langchain-huggingface" },
+    { name = "langchain-weaviate" },
     { name = "pypdf" },
     { name = "python-dotenv" },
     { name = "sentence-transformers" },
     { name = "streamlit" },
     { name = "transformers" },
-]
-
-[package.optional-dependencies]
-weaviate = [
-    { name = "langchain-weaviate" },
     { name = "weaviate-client" },
 ]
 
@@ -2465,15 +2461,14 @@ requires-dist = [
     { name = "langchain-chroma", specifier = ">=0.2.0" },
     { name = "langchain-community", specifier = ">=0.3.0" },
     { name = "langchain-huggingface", specifier = ">=0.1.0" },
-    { name = "langchain-weaviate", marker = "extra == 'weaviate'", specifier = ">=0.0.6" },
+    { name = "langchain-weaviate", specifier = ">=0.0.6" },
     { name = "pypdf", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "sentence-transformers", specifier = ">=3.0.0" },
     { name = "streamlit", specifier = ">=1.35.0" },
     { name = "transformers", specifier = ">=4.40.0,<5.0.0" },
-    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.21.3,<5.0.0" },
+    { name = "weaviate-client", specifier = ">=4.21.3,<5.0.0" },
 ]
-provides-extras = ["weaviate"]
 
 [package.metadata.requires-dev]
 dev = [
