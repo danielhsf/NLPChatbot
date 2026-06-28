@@ -5,7 +5,7 @@ A RAG (Retrieval-Augmented Generation) chatbot for answering questions about Nat
 ## Stack
 
 - **LangChain** (LCEL) — chain orchestration
-- **Chroma** — persistent local vector store
+- **Weaviate** (embedded) — default vector store, with hybrid BM25 + vector search. **Chroma** is an optional alternative backend.
 - **HuggingFace `all-MiniLM-L6-v2`** — local embeddings
 - **Claude (`claude-sonnet-4-5`)** via `langchain-anthropic` — LLM
 - **Streamlit** — chat UI
@@ -31,6 +31,16 @@ ANTHROPIC_API_KEY=your_api_key_here
 ```
 
 Get your API key at [console.anthropic.com/settings/api-keys](https://console.anthropic.com/settings/api-keys).
+
+#### Vector store backend
+
+Controlled by `VECTOR_STORE_BACKEND` in `.env`:
+
+- `weaviate` (default) — embedded Weaviate with hybrid search (BM25 + vector).
+  The weighting is set by `HYBRID_ALPHA` (0 = pure keyword, 1 = pure vector;
+  default `0.75`). The embedded server is started automatically and torn down
+  when the app process exits.
+- `chroma` — persistent local Chroma store with MMR retrieval.
 
 ### 3. Add PDFs
 
